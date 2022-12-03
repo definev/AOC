@@ -1,12 +1,8 @@
 import 'dart:io';
 import 'dart:math';
 
-class Tuple<F, S> {
-  const Tuple(this.first, this.second);
+import 'helper/tuple.dart';
 
-  final F first;
-  final S second;
-}
 
 void main() {
   final input = File('../input/day01.txt').readAsStringSync();
