@@ -13,13 +13,13 @@ int binarySearch(List<int> arr, int value) {
   return -1;
 }
 
-List<int> selectionSort(List<int> arr) {
+List<T> selectionSort<T>(List<T> arr, {required int Function(T first, T last) compareTo}) {
   for (var i = 0; i < arr.length - 1; i++) {
     int min = i;
     for (var j = i + 1; j < arr.length; j++) {
-      if (arr[j] < arr[min]) min = j;
+      if (compareTo(arr[j], arr[min]) == -1) min = j;
     }
-    int temp = arr[i];
+    var temp = arr[i];
     arr[i] = arr[min];
     arr[min] = temp;
   }
