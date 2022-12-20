@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'helper/algo.dart';
+import 'helper/trotter/trotter.dart';
 import 'helper/tuple.dart';
 
 class Valve {
@@ -61,220 +61,42 @@ Map<String, Valve> parseInput(String fileName) {
 }
 
 void main() {
-  final input = parseInput('../sample/day16.txt');
+  final input = parseInput('../input/day16.txt');
 
   // firstHalfProblem(input);
   lastHalfProblem(input);
 }
 
-class Node {
-  final String id;
-  final int rate;
-  final Map<String, Tuple<int, int>> weights;
+List<Tuple<Set<String>, Set<String>>> _shuffle(Set<String> usableValves, int length) {
+  final comb = Combinations<String>(length, usableValves.toList());
 
-  Node(this.id, this.rate, this.weights);
-
-  bool operator ==(Object? other) => (other is Node) ? other.id == id : false;
-
-  @override
-  int get hashCode => id.hashCode ^ rate;
-
-  @override
-  String toString() {
-    return '$id | $rate | $weights';
-  }
-}
-
-class Pair {
-  Pair(this.first, this.last);
-
-  final String first;
-  final String last;
-
-  operator ==(Object? other) => (other is Pair) ? other.first == first && other.last == last : false;
-
-  @override
-  int get hashCode => first.hashCode ^ last.hashCode;
+  return comb() //
+      .map((e) => Tuple(e.toSet(), {...usableValves}..removeAll(e.toSet())))
+      .toList();
 }
 
 void lastHalfProblem(Map<String, Valve> input) {
-  Set<Node> nodes = {};
-  for (var valve in input.entries) {
-    if (valve.value.rate == 0) continue;
-    final weightsEntries = valve.value.costs
-        .map((key, value) {
-          if (input[key]!.rate == 0) return MapEntry(key, Tuple(0, 0));
-          return MapEntry(key, Tuple(input[key]!.rate, value));
-        })
-        .entries
-        .toList()
-      ..removeWhere((e) => e.key == valve.key || e.value.first == 0);
-    selectionSort(
-      weightsEntries,
-      compareTo: (first, last) => last.value.first.compareTo(first.value.first),
-    );
+  final usableValves = Map.fromEntries(input.entries.where((e) => e.value.rate > 0)).keys.toSet();
 
-    nodes.add(
-      Node(
-        valve.value.id,
-        valve.value.rate,
-        Map.fromEntries(weightsEntries),
-      ),
-    );
-  }
+  int best = 0;
+  for (var index = 1; index <= usableValves.length ~/ 2; index++) {
+    final usablePairs = _shuffle(usableValves, index);
 
-  final weight = getWeightConnect(input, 'AA', null, 1);
-  Node start = Node('AA', 0, weight);
-  nodes.add(start);
-
-  int value = _findBestPathWithElephant(
-    nodes,
-    needTravered: nodes.map((e) => e.id).toSet()..removeWhere((e) => e == 'AA'),
-    current: start,
-    elephant: start,
-    exceptCurrent: null,
-    exceptElephant: null,
-    minutes: 0,
-    total: 0,
-    triggerCurrent: 0,
-    triggerElephant: 0,
-  );
-  print(value);
-}
-
-int _findBestPathWithElephant(
-  Set<Node> nodes, {
-  required Set<String> needTravered,
-  required Node current,
-  required String? exceptCurrent,
-  required Node elephant,
-  required String? exceptElephant,
-  required int minutes,
-  required int total,
-  required int triggerCurrent,
-  required int triggerElephant,
-}) {
-  final nextMinutes = minutes + 1;
-
-  int nextTotal = total;
-
-  if (nextMinutes == 26) return total;
-  if (nextMinutes == triggerCurrent) {
-    nextTotal += (26 - nextMinutes) * current.rate;
-  }
-  if (nextMinutes == triggerElephant) {
-    nextTotal += (26 - nextMinutes) * elephant.rate;
-  }
-  if (needTravered.isEmpty) return nextTotal;
-
-  int bestTotal = nextTotal;
-
-  Set<Pair> pairs = {};
-
-  for (var currentRelate in current.weights.keys) {
-    for (var elephantRelate in elephant.weights.keys) {
-      bool update = true;
-      for (var pair in pairs) {
-        if (pair.first == currentRelate && pair.last == elephantRelate) {
-          update = false;
-          break;
-        }
-        if (pair.first == elephantRelate && pair.last == currentRelate) {
-          update = false;
-          break;
-        }
+    for (var pair in usablePairs) {
+      final firstBest = _bestPath(input, pair.first, 26, 'AA');
+      final secondBest = _bestPath(input, pair.second, 26, 'AA');
+      if (best < firstBest + secondBest) {
+        print('NEW BEST : $best');
+        best = max(best, firstBest + secondBest);
       }
-      if (!update) continue;
-      if (currentRelate == elephantRelate) continue;
-      if (currentRelate == exceptCurrent ||
-          currentRelate == exceptElephant ||
-          elephantRelate == exceptCurrent ||
-          elephantRelate == exceptElephant) continue;
-      if (!needTravered.contains(currentRelate)) continue;
-      if (!needTravered.contains(elephantRelate)) continue;
-      pairs.add(Pair(currentRelate, elephantRelate));
     }
   }
 
-  Set<String> triedStep = {};
-
-  for (var pair in pairs) {
-    final currentRelate = pair.first;
-    final elephantRelate = pair.last;
-    if (currentRelate == elephantRelate) continue;
-    final stillCurrent = triggerCurrent >= nextMinutes || !needTravered.contains(currentRelate);
-    final currentRelateNode = stillCurrent
-        ? current
-        : () {
-            return nodes.firstWhere((e) => e.id == currentRelate);
-          }();
-    final nextTriggerCurrent = stillCurrent
-        ? triggerCurrent
-        : () {
-            return triggerCurrent + current.weights[currentRelate]!.second + 1;
-          }();
-
-    final stillElephant = triggerElephant >= nextMinutes || !needTravered.contains(elephantRelate);
-    final elephantRelateNode = stillElephant
-        ? elephant
-        : () {
-            return nodes.firstWhere((e) => e.id == elephantRelate);
-          }();
-    final nextTriggerElephant = stillElephant
-        ? triggerElephant
-        : () {
-            return triggerElephant + elephant.weights[elephantRelate]!.second + 1;
-          }();
-
-    final step = 'C:${current.id}->${currentRelateNode.id}|E:${elephant.id}->${elephantRelateNode.id}';
-    if (triedStep.contains(step)) continue;
-    triedStep.add(step);
-    print(triedStep);
-
-    final newTotal = _findBestPathWithElephant(
-      nodes,
-      needTravered: {...needTravered}..removeAll([currentRelateNode.id, elephantRelateNode.id]),
-      current: currentRelateNode,
-      exceptCurrent: currentRelateNode.id,
-      elephant: elephantRelateNode,
-      exceptElephant: elephantRelateNode.id,
-      minutes: nextMinutes,
-      total: nextTotal,
-      triggerCurrent: nextTriggerCurrent,
-      triggerElephant: nextTriggerElephant,
-    );
-
-    if (bestTotal >= newTotal) continue;
-    bestTotal = max(bestTotal, newTotal);
-    print('CURRENT BEST : $bestTotal');
-  }
-
-  return bestTotal;
-}
-
-Map<String, Tuple<int, int>> getWeightConnect(
-  Map<String, Valve> input,
-  String currentNode,
-  String? except,
-  int depth,
-) {
-  Map<String, Tuple<int, int>> value = {};
-  final valve = input[currentNode]!;
-  for (var linked in valve.linkedValves) {
-    if (linked == except) continue;
-    final linkedNode = input[linked]!;
-    if (linkedNode.rate == 0) {
-      value = {...value, ...getWeightConnect(input, linked, currentNode, depth + 1)};
-      continue;
-    }
-    value[linked] = Tuple(input[linked]!.rate, depth);
-  }
-
-  return value;
+  print(best);
 }
 
 void firstHalfProblem(Map<String, Valve> input) {
-  final usableValves = Map.fromEntries(input.entries.where((e) => e.value.rate > 0)).keys.toList();
+  final usableValves = Map.fromEntries(input.entries.where((e) => e.value.rate > 0)).keys.toSet();
   int remainMinutes = 30;
   int best = _bestPath(input, usableValves, remainMinutes, 'AA');
   print(best);
@@ -294,7 +116,7 @@ void firstHalfProblem(Map<String, Valve> input) {
 ///
 /// Step 3:
 /// - DFS to all `usableValves` remain,
-int _bestPath(Map<String, Valve> input, List<String> usableValves, int remainMinutes, String currentValveKey) {
+int _bestPath(Map<String, Valve> input, Set<String> usableValves, int remainMinutes, String currentValveKey) {
   if (remainMinutes == 0) return 0;
 
   int value = 0;
@@ -309,9 +131,7 @@ int _bestPath(Map<String, Valve> input, List<String> usableValves, int remainMin
   final currentValve = input[currentValveKey]!;
   final travelCosts = currentValve.costs;
 
-  final linkedUsableValvesEntries = List<String> //
-      .from(usableValves)
-    ..removeWhere((e) => e == currentValveKey);
+  final linkedUsableValvesEntries = {...usableValves}..removeWhere((e) => e == currentValveKey);
 
   for (var linkedValveKey in linkedUsableValvesEntries) {
     final linkedValve = input[linkedValveKey]!;
