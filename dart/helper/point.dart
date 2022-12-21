@@ -18,13 +18,16 @@ class Point {
   Point operator +(Point other) => Point(dx + other.dx, dy + other.dy);
   Point operator *(Point other) => Point(dx * other.dx, dy * other.dy);
 
-  Point move(Direction direction) {
+  Point move(Direction direction, [bool bottomUp = false]) {
     switch (direction) {
       case Direction.down:
+        if (bottomUp) return Point(dx, dy - 1);
         return Point(dx, dy + 1);
       case Direction.up:
+        if (bottomUp) return Point(dx, dy + 1);
         return Point(dx, dy - 1);
       case Direction.left:
+
         return Point(dx - 1, dy);
       case Direction.right:
         return Point(dx + 1, dy);

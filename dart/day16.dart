@@ -63,7 +63,7 @@ Map<String, Valve> parseInput(String fileName) {
 void main() {
   final input = parseInput('../input/day16.txt');
 
-  // firstHalfProblem(input);
+  firstHalfProblem(input);
   lastHalfProblem(input);
 }
 
