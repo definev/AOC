@@ -29,14 +29,6 @@ func ParseInput(filepath string) ([]int64, []int64) {
 	return lefts, rights
 }
 
-func GenerateIndexList[T any](list []T) []int {
-	indexList := make([]int, len(list))
-	for i := range list {
-		indexList[i] = i
-	}
-	return indexList
-}
-
 func Partition[T constraints.Ordered](list []T) int {
 	pivot := len(list) - 1
 	i := 0
