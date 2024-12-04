@@ -38,7 +38,6 @@ func scanPattern(input [][]rune, pattern string, positions [][]int) int {
 		for inc := 0; inc < frame; inc++ {
 			end = start + inc
 			if end >= len(positions) {
-				end = start + len(assemble)
 				break
 			}
 
