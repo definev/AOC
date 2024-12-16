@@ -1,0 +1,7 @@
+--- FAIL: TestSample (0.00s)
+    main_test.go:12: got 9223372036854775807 want 11048
+--- FAIL: TestInput (0.00s)
+    main_test.go:23: got 9223372036854775807 want 11048
+FAIL
+exit status 1
+FAIL	github.com/definev/AOC/2024/go/16	0.388s
