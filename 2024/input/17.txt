@@ -1,0 +1,22 @@
+Register A: 50230824
+Register B: 0
+Register C: 0
+
+Program: 2,4,1,3,7,5,0,3,1,4,4,7,5,5,3,0
+
+first: RegA = ?, RegB = 0, RegC = 0
+last:  RegA = 0, RegB = 0, RegC = ?
+
+2,4, // BST regB = regA % 8                     // last 3 bit
+1,3, // BXL regB = regB XOR 3                   //
+7,5, // CDV regC = regA BITWISE_RIGHT regB      //
+4,7, // BXC regB = regB XOR regC
+1,4, // BXL regB = regB XOR 4
+
+0,3, // ADV regA = regA BITWISE_RIGHT 3         //
+
+000 000 000 000 000 000 000 000 000 000 000 000
+
+
+5,5, // OUT regB
+3,0
